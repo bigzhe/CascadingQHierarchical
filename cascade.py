@@ -24,19 +24,24 @@ def run(queries: "list[Query]"):
                 if non_q_hierarchical_query.name == q_hierarchical_query.name or\
                         (q_hierarchical_query, non_q_hierarchical_query) in past_comparisons:
                     continue
-                past_comparisons.add((q_hierarchical_query, non_q_hierarchical_query))
+                past_comparisons.add(
+                    (q_hierarchical_query, non_q_hierarchical_query))
                 q_dependant_on = set()
                 q_hierarchical_query.dependant_on_deep(q_dependant_on)
                 if non_q_hierarchical_query.name in map(lambda x: x.name, q_dependant_on):
                     continue
-                q_hierarchical_query_relation_names = {x.name for x in q_hierarchical_query.relations}
-                non_q_hierarchical_query_relation_names = {x.name for x in non_q_hierarchical_query.relations}
+                q_hierarchical_query_relation_names = {
+                    x.name for x in q_hierarchical_query.relations}
+                non_q_hierarchical_query_relation_names = {
+                    x.name for x in non_q_hierarchical_query.relations}
                 if not q_hierarchical_query_relation_names.issubset(non_q_hierarchical_query_relation_names):
                     continue
-                new_query = is_homomorphism(q_hierarchical_query, non_q_hierarchical_query)
+                new_query = is_homomorphism(
+                    q_hierarchical_query, non_q_hierarchical_query)
                 if new_query:
                     new_query.dependant_on.add(q_hierarchical_query)
-                    new_query.dependant_on.update(non_q_hierarchical_query.dependant_on)
+                    new_query.dependant_on.update(
+                        non_q_hierarchical_query.dependant_on)
                     if new_query.is_q_hierarchical():
                         new_q_hierarchical.add(new_query)
                         break
@@ -45,14 +50,15 @@ def run(queries: "list[Query]"):
 
         res.update(new_q_hierarchical)
         if len(queries) <= len(res):
-            compatible = list(map(lambda x: QuerySet(x), filter(lambda x: len(x) == len(queries), find_compatible_reductions(list(res)))))
-            if len(compatible) > 0:
-                return compatible[0]
+            compatible = list(map(lambda x: QuerySet(x), filter(lambda x: len(
+                x) == len(queries), find_compatible_reductions(list(res)))))
+            if len(compatible) > 3:
+                print(len(compatible))
+                return compatible
 
         if len(new_q_hierarchical) + len(new_non_q_hierarchical) == 0:
+            # compatible = list(map(lambda x: QuerySet(x), filter(lambda x: len(x) == len(queries), find_compatible_reductions(list(res)))))
             return None
-        non_q_hierarchical.update(new_non_q_hierarchical)   # todo could this lead to double solutions?
+        # todo could this lead to double solutions?
+        non_q_hierarchical.update(new_non_q_hierarchical)
         q_hierarchical.update(new_q_hierarchical)
-
-
-

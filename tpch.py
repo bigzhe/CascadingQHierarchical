@@ -9,13 +9,14 @@ from Relation import Relation
 
 dataset_version = ["1", "10"]
 base_dataset = "tpch"
-view = False
+view = True
 
 Part = Relation("part", OrderedSet(
     ["PARTKEY", "P_NAME", "P_MFGR", "P_BRAND", "P_TYPE", "P_SIZE", "P_CONTAINER", "P_RETAILPRICE", "P_COMMENT"]))
 Supplier = Relation("supplier",
-                    OrderedSet(["SUPPKEY", "S_NAME", "S_ADDRESS", "NATIONKEY", "S_PHONE", "S_ACCTBAL", "S_COMMENT"]))
-PartSupp = Relation("partsupp", OrderedSet(["PARTKEY", "SUPPKEY", "PS_AVAILQTY", "PS_SUPPLYCOST", "PS_COMMENT"]))
+                    OrderedSet(["SUPPKEY", "S_NAME", "S_ADDRESS", "S_NATIONKEY", "S_PHONE", "S_ACCTBAL", "S_COMMENT"]))
+PartSupp = Relation("partsupp", OrderedSet(
+    ["PARTKEY", "SUPPKEY", "PS_AVAILQTY", "PS_SUPPLYCOST", "PS_COMMENT"]))
 Customer = Relation("customer", OrderedSet(
     ["CUSTKEY", "C_NAME", "C_ADDRESS", "NATIONKEY", "C_PHONE", "C_ACCTBAL", "C_MKTSEGMENT", "C_COMMENT"]))
 Orders = Relation("orders", OrderedSet(
@@ -24,7 +25,8 @@ Orders = Relation("orders", OrderedSet(
 LineItem = Relation("lineitem", OrderedSet(
     ["ORDERKEY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "L_QUANTITY", "L_EXTENDEDPRICE", "L_DISCOUNT", "L_TAX", "L_RETURNFLAG",
      "L_LINESTATUS", "L_SHIPDATE", "L_COMMITDATE", "L_RECEIPTDATE", "L_SHIPINSTRUCT", "L_SHIPMODE", "L_COMMENT"]))
-Nation = Relation("nation", OrderedSet(["NATIONKEY", "N_NAME", "REGIONKEY", "N_COMMENT"]))
+Nation = Relation("nation", OrderedSet(
+    ["NATIONKEY", "N_NAME", "REGIONKEY", "N_COMMENT"]))
 Region = Relation("region", OrderedSet(["REGIONKEY", "R_NAME", "R_COMMENT"]))
 
 datatypes: dict[str, str] = {
@@ -81,11 +83,14 @@ datatypes: dict[str, str] = {
     "R_NAME": "string",
     "R_COMMENT": "string",
 
+    "S_NATIONKEY": "int",
+
 }
 # for rel in [Part, Supplier, PartSupp, Customer, Orders, LineItem, Nation, Region]:
 #     attribute_list = [f"\"{variable}\": \"{datatypes[variable]}\"" for variable in rel.free_variables]
 #     print(f"\"{rel.name}\", {{{', '.join(attribute_list)}}}")
 #
+
 
 def example_1():
     Q1 = Query("Q1", OrderedSet([Part, PartSupp, LineItem, Supplier]),
@@ -113,11 +118,12 @@ def example_1():
     else:
         print("No result")
 
+
 def example_2():
     Q1 = Query("Q1", OrderedSet([Part, PartSupp, LineItem, Orders]),
                OrderedSet(["P_NAME", "O_TOTALPRICE", "PS_AVAILQTY", "L_QUANTITY", "PARTKEY", "SUPPKEY", "ORDERKEY"]))
     Q2 = Query("Q2", OrderedSet([LineItem, Orders]),
-               OrderedSet([ "O_TOTALPRICE", "L_QUANTITY", "PARTKEY", "SUPPKEY", "ORDERKEY"]))
+               OrderedSet(["O_TOTALPRICE", "L_QUANTITY", "PARTKEY", "SUPPKEY", "ORDERKEY"]))
     print(Q1.is_q_hierarchical())
     print(Q2.is_q_hierarchical())
     res = run([Q1, Q2])
@@ -140,11 +146,12 @@ def example_2():
     else:
         print("No result")
 
+
 def example_3():
     Q1 = Query("Q1", OrderedSet([Part, PartSupp, LineItem, Orders]),
                OrderedSet(["P_NAME", "O_TOTALPRICE", "PS_AVAILQTY", "L_QUANTITY", "PARTKEY", "SUPPKEY", "ORDERKEY"]))
     Q2 = Query("Q2", OrderedSet([Part, PartSupp, LineItem]),
-               OrderedSet([ "P_NAME", "PS_AVAILQTY", "L_QUANTITY", "PARTKEY", "SUPPKEY", "ORDERKEY"]))
+               OrderedSet(["P_NAME", "PS_AVAILQTY", "L_QUANTITY", "PARTKEY", "SUPPKEY", "ORDERKEY"]))
     print(Q1.is_q_hierarchical())
     print(Q2.is_q_hierarchical())
     res = run([Q1, Q2])
@@ -168,10 +175,14 @@ def example_3():
     else:
         print("No result")
 
+
 def example_4():
-    Q1 = Query("Q1", OrderedSet([PartSupp, LineItem, Orders, Customer, Supplier]), OrderedSet(["SUPPKEY", "PARTKEY", "ORDERKEY", "CUSTKEY", "NATIONKEY"]))
-    Q2 = Query("Q2", OrderedSet([PartSupp, LineItem, Supplier]), OrderedSet(["SUPPKEY", "PARTKEY", "ORDERKEY", "NATIONKEY", "L_QUANTITY", "PS_SUPPLYCOST", "PS_AVAILQTY", "S_NAME"]))
-    Q3 = Query("Q3", OrderedSet([Customer, Orders]), OrderedSet(["CUSTKEY", "ORDERKEY", "NATIONKEY"]))
+    Q1 = Query("Q1", OrderedSet([PartSupp, LineItem, Orders, Customer, Supplier]), OrderedSet(
+        ["SUPPKEY", "PARTKEY", "ORDERKEY", "CUSTKEY", "NATIONKEY"]))
+    Q2 = Query("Q2", OrderedSet([PartSupp, LineItem, Supplier]), OrderedSet(
+        ["SUPPKEY", "PARTKEY", "ORDERKEY", "NATIONKEY", "L_QUANTITY", "PS_SUPPLYCOST", "PS_AVAILQTY", "S_NAME"]))
+    Q3 = Query("Q3", OrderedSet([Customer, Orders]), OrderedSet(
+        ["CUSTKEY", "ORDERKEY", "NATIONKEY"]))
     res = run([Q1, Q2, Q3])
     if res:
         for tpch in dataset_version:
@@ -193,10 +204,14 @@ def example_4():
     else:
         print("No result")
 
+
 def example_5():
-    Q1 = Query("Q1", OrderedSet([Part, PartSupp, Supplier, Customer, Nation]), OrderedSet(["PARTKEY", "NATIONKEY", "SUPPKEY", "N_NAME", "S_NAME", "P_NAME", "PS_AVAILQTY"]))
-    Q2 = Query("Q2", OrderedSet([Supplier, Customer, Nation]), OrderedSet(["NATIONKEY","SUPPKEY", "S_NAME", "N_NAME", "S_ADDRESS", "CUSTKEY"]))
-    Q3 = Query("Q3", OrderedSet([Part, PartSupp]), OrderedSet(["PARTKEY","SUPPKEY", "PS_AVAILQTY", "P_NAME"]))
+    Q1 = Query("Q1", OrderedSet([Part, PartSupp, Supplier, Customer, Nation]), OrderedSet(
+        ["PARTKEY", "NATIONKEY", "SUPPKEY", "N_NAME", "S_NAME", "P_NAME", "PS_AVAILQTY"]))
+    Q2 = Query("Q2", OrderedSet([Supplier, Customer, Nation]), OrderedSet(
+        ["NATIONKEY", "SUPPKEY", "S_NAME", "N_NAME", "S_ADDRESS", "CUSTKEY"]))
+    Q3 = Query("Q3", OrderedSet([Part, PartSupp]), OrderedSet(
+        ["PARTKEY", "SUPPKEY", "PS_AVAILQTY", "P_NAME"]))
     res = run([Q1, Q2, Q3])
     if res:
         for tpch in dataset_version:
@@ -217,6 +232,7 @@ def example_5():
 
     else:
         print("No result")
+
 
 def example_6():
     Q1 = Query("Q1", OrderedSet([Part, PartSupp, LineItem, Supplier]),
@@ -245,10 +261,57 @@ def example_6():
         print("No result")
 
 
+def example_7():
+    Q1 = Query("Q1", OrderedSet([Nation, Region]),
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY"]))
+    Q2 = Query("Q2", OrderedSet([Nation, Region, Customer]),
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY"]))
+    Q3 = Query("Q3", OrderedSet([Nation, Region, Customer, Orders]),
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS"]))
+    Q4 = Query("Q4", OrderedSet([Nation, Region, Customer, Orders, LineItem]),
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY"]))
+    Q5 = Query("Q5", OrderedSet([Nation, Region, Customer, Orders, LineItem, PartSupp]),
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY"]))
+    Q6 = Query("Q6", OrderedSet([Nation, Region, Customer, Orders, LineItem, PartSupp, Part]),
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY",
+                           "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY", "P_NAME"]))
+    Q7 = Query("Q7", OrderedSet([Nation, Region, Customer, Orders, LineItem, PartSupp, Part, Supplier]),
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY", "S_NAME", "P_NAME"]))
+
+    print("Q1 is q-hier: ", Q1.is_q_hierarchical())
+    print("Q2 is q-hier: ", Q2.is_q_hierarchical())
+    print("Q3 is q-hier: ", Q3.is_q_hierarchical())
+    print("Q4 is q-hier: ", Q4.is_q_hierarchical())
+    print("Q5 is q-hier: ", Q5.is_q_hierarchical())
+    print("Q6 is q-hier: ", Q6.is_q_hierarchical())
+    print("Q7 is q-hier: ", Q7.is_q_hierarchical())
+
+    res_list = run([Q1, Q2, Q3, Q4, Q5, Q6, Q7])
+    for (i, res) in enumerate(res_list):
+        # if res:
+        for tpch in dataset_version:
+            multigenerator = M3MultiQueryGenerator(
+                base_dataset,
+                f"7_{i}",
+                str(tpch),
+                'RingFactorizedRelation',
+                res,
+                datatypes,
+                "tbl"
+            )
+            multigenerator.generate(batch=True)
+
+        if view:
+            res.graph_viz(f"TPCH_7_{i}")
+    else:
+        print("No result")
+
+
 if __name__ == "__main__":
-    example_1()
-    example_2()
-    example_3()
-    example_4()
-    example_5()
-    example_6()
+    # example_1()
+    # example_2()
+    # example_3()
+    # example_4()
+    # example_5()
+    # example_6()
+    example_7()
