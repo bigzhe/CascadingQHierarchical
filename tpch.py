@@ -4,7 +4,7 @@ from ordered_set import OrderedSet
 
 from M3MultiQueryGenerator import M3MultiQueryGenerator
 from cascade import run
-from Query import Query
+from Query import Query, QuerySet
 from Relation import Relation
 
 dataset_version = ["1", "10"]
@@ -310,32 +310,46 @@ def example_7():
 def example_8():
 
     Q1 = Query("Q1", OrderedSet([PartSupp, LineItem]),
-               OrderedSet(["PS_AVAILQTY", "P_NAME", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]))
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]))
     Q3 = Query("Q3", OrderedSet([PartSupp, LineItem, Orders]),
-               OrderedSet(["PS_AVAILQTY", "P_NAME", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]))
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]))
+    Q4 = Query("Q4", OrderedSet([PartSupp, LineItem, Part]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]))
+
 
     Q2 = Query("Q2", OrderedSet([Orders, Customer]),
                OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]))
+    Q5 = Query("Q5", OrderedSet([Orders, Customer, LineItem, PartSupp]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]))
+    Q6 = Query("Q6", OrderedSet([Orders, Customer, LineItem, PartSupp, Part]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]))
 
-    Q4 = Query("Q4", OrderedSet([Supplier, PartSupp, Part, LineItem]),
-               OrderedSet(["S_NAME", "PS_AVAILQTY", "P_NAME", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]))
 
-    # print("Q1 is q-hier: ", Q1.is_q_hierarchical())
-    # print("Q2 is q-hier: ", Q2.is_q_hierarchical())
-    # print("Q3 is q-hier: ", Q3.is_q_hierarchical())
-    # print("Q4 is q-hier: ", Q4.is_q_hierarchical())
-    # print("Q5 is q-hier: ", Q5.is_q_hierarchical())
-    # print("Q6 is q-hier: ", Q6.is_q_hierarchical())
-    # print("Q7 is q-hier: ", Q7.is_q_hierarchical())
 
-    res_list = run([Q1, Q3])
-    # res_list = run([Q1, Q2, Q3, Q4, Q5, Q6, Q7])
+    print("Q1 is q-hier: ", Q1.is_q_hierarchical())
+    print("Q2 is q-hier: ", Q2.is_q_hierarchical())
+    print("Q3 is q-hier: ", Q3.is_q_hierarchical())
+    print("Q4 is q-hier: ", Q4.is_q_hierarchical())
+    print("Q5 is q-hier: ", Q5.is_q_hierarchical())
+    print("Q6 is q-hier: ", Q6.is_q_hierarchical())
+
+    # res_list = run([Q1, Q2, Q3, Q5, Q4, Q6])
+    # res_list = run([Q1, Q4])
+    # res_list = run([Q1, Q2, Q3, Q5])
+
+
+    Q4 = Query("Q4", OrderedSet([PartSupp, LineItem, Part]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]),
+               OrderedSet([Q1, Part]))
+    Q4.dependant_on = OrderedSet([Q1]) 
+
+    res_list = [QuerySet(OrderedSet([Q1, Q4]))]
+
     for (i, res) in enumerate(res_list):
-        # if res:
         for tpch in dataset_version:
             multigenerator = M3MultiQueryGenerator(
                 base_dataset,
-                f"7_{i}",
+                f"8_{i}",
                 str(tpch),
                 'RingFactorizedRelation',
                 res,
@@ -357,4 +371,5 @@ if __name__ == "__main__":
     # example_4()
     # example_5()
     # example_6()
-    example_7()
+    # example_7()
+    example_8()
