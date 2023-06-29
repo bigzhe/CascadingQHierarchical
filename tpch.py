@@ -303,8 +303,8 @@ def example_7():
 
         if view:
             res.graph_viz(f"TPCH_7_{i}")
-    else:
-        print("No result")
+        else:
+            print("No result")
 
 
 if __name__ == "__main__":
