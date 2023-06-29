@@ -8,6 +8,12 @@ class Relation:
         self.private_keys: set[str] = private_keys
         self.last_variable: "VariableOrderNode | None" = None
 
+    def var_type(self):
+        s = ""
+        for var in self.variables:
+            s += f"\"{var}\": \"{self.variables[var]}\"\n"
+        return s
+
     def __hash__(self):
         return hash(self.name)
 
@@ -16,12 +22,13 @@ class Relation:
 
 
 class VariableOrderNode:
-    def __init__(self, name: str, data_type: str = "int"):
+    def __init__(self, name: str, data_type: str = "int", all_non_join_below: bool = False):
         self.name: str = name
         self.children: "List[VariableOrderNode]" = []
         self.parent: "VariableOrderNode | None" = None
         self.id = -1
         self.data_type = data_type
+        self.all_non_join_below = all_non_join_below
 
     def add_child(self, child: "VariableOrderNode"):
         self.children.append(child)
@@ -56,6 +63,49 @@ class VariableOrderNode:
         for child in self.children:
             res += child.generate_config()
         return res
+
+    def generate_sql(self):
+
+        (s, n) = self.generate_sql_line()
+
+        if self.all_non_join_below:
+            return s
+
+        # remove duplicates in children based on name
+        self.children = list({v.name: v for v in self.children}.values())
+        vars = self.children
+
+        # sort children by all_non_join_below with all_non_join_below = False first
+        vars.sort(key=lambda x: x.all_non_join_below, reverse=True)
+
+        for child in vars:
+            s += child.generate_sql()
+
+        # remove the last *
+        s = s[:-2] + "\n"
+
+        return s
+
+    def generate_sql_line(self):
+        if self.all_non_join_below:
+
+            # materialise all descendant in a list (there is only one path)
+            descendants = [self]
+            iterator = self
+            while len(iterator.children) > 0:
+                iterator = iterator.children[0]
+                descendants.append(iterator)
+
+            descendants_types = ",".join(
+                [tpch_sql_type_table[x.name] for x in descendants])
+            descendants_names = ",".join([x.name for x in descendants])
+            # generate the SQL
+            s = f"\t[lift<{self.id}>: RingFactorizedRelation<[{self.id}, {descendants_types}]>]({descendants_names}) *\n"
+            return (s, len(descendants))
+
+        else:
+            s = f"\t[lift<{self.id}>: RingFactorizedRelation<[{self.id}, {tpch_sql_type_table[self.name]}]>]({self.name}) *\n"
+            return (s, 1)
 
     def __str__(self):
         return self.name
@@ -105,6 +155,66 @@ Region = Relation("region", {
 TPCH_1_Q2 = Relation("q2", {"orderkey": "int", "partkey": "int", "suppkey": "int",
                      "l_quantity": "double", "o_totalprice": "double"}, {"partkey", "suppkey"})
 
+tpch_sql_type_table = {
+    "custkey": "INT",
+    "c_name": "VARCHAR(25)",
+    "c_address": "VARCHAR(40)",
+    "nationkey": "INT",
+    "c_phone": "CHAR(15)",
+    "c_acctbal": "DECIMAL",
+    "c_mktsegment": "CHAR(10)",
+    "c_comment": "VARCHAR(117)",
+    "orderkey": "INT",
+    "partkey": "INT",
+    "suppkey": "INT",
+    "l_linenumber": "INT",
+    "l_quantity": "DECIMAL",
+    "l_extendedprice": "DECIMAL",
+    "l_discount": "DECIMAL",
+    "l_tax": "DECIMAL",
+    "l_returnflag": "CHAR(1)",
+    "l_linestatus": "CHAR(1)",
+    "l_shipdate": "CHAR(10)",
+    "l_commitdate": "CHAR(10)",
+    "l_receiptdate": "CHAR(10)",
+    "l_shipinstruct": "CHAR(25)",
+    "l_shipmode": "CHAR(10)",
+    "l_comment": "VARCHAR(44)",
+    "p_name": "VARCHAR(55)",
+    "p_mfgr": "CHAR(25)",
+    "p_brand": "CHAR(10)",
+    "p_type": "VARCHAR(25)",
+    "p_size": "INT",
+    "p_container": "CHAR(10)",
+    "p_retailprice": "DECIMAL",
+    "p_comment": "VARCHAR(23)",
+    "ps_availqty": "INT",
+    "ps_supplycost": "DECIMAL",
+    "ps_comment": "VARCHAR(199)",
+    "s_name": "CHAR(25)",
+    "s_address": "VARCHAR(40)",
+    "s_phone": "CHAR(15)",
+    "s_acctbal": "DECIMAL",
+    "s_comment": "VARCHAR(101)",
+    "o_custkey": "INT",
+    "o_orderstatus": "CHAR(1)",
+    "o_totalprice": "DECIMAL",
+    "o_orderdate": "CHAR(10)",
+    "o_orderpriority": "CHAR(15)",
+    "o_clerk": "CHAR(15)",
+    "o_shippriority": "INT",
+    "o_comment": "VARCHAR(79)",
+    "n_name": "CHAR(25)",
+    "regionkey": "INT",
+    "n_comment": "VARCHAR(152)",
+    "r_name": "CHAR(25)",
+    "r_comment": "VARCHAR(152)"
+}
+
+
+tpch_relations = [Part, Supplier, PartSupp,
+                  Customer, Orders, Lineitem, Nation, Region]
+
 
 def generate_txt(all_relations: "List[Relation]", root: "VariableOrderNode", free_variables: set[str]):
     for relation in all_relations:
@@ -142,6 +252,65 @@ def generate_txt(all_relations: "List[Relation]", root: "VariableOrderNode", fre
     print(config_file)
 
     return config_file
+
+
+def generate_sql_text(all_relations: "List[Relation]", root: "VariableOrderNode", free_variables: set[str], query_group: str, q: str, path: str):
+
+    for relation in all_relations:
+        iterator = root
+        while True:
+            found = False
+            for child in iterator.children:
+                if (child.child_variables().union({child.name})).intersection(relation.private_keys):
+                    iterator = child
+                    found = True
+                    break
+            if not found:
+                variables_to_add = set(relation.variables.keys()).difference(
+                    iterator.parent_variables().union({iterator.name}))
+
+                # add free variables first
+                for variable in variables_to_add.intersection(free_variables):
+                    new_node = VariableOrderNode(
+                        variable, relation.variables[variable])
+                    iterator.add_child(new_node)
+                    iterator = new_node
+                    iterator.all_non_join_below = True
+                relation.last_variable = iterator
+                break
+
+    s = f"IMPORT DTREE FROM FILE '{query_group}-{q}.txt';"
+    s += "\n\n"
+
+    s += "CREATE DISTRIBUTED TYPE RingFactorizedRelation\n"
+    s += "FROM FILE 'ring/ring_factorized.hpp'\n"
+    s += "WITH PARAMETER SCHEMA (dynamic_min);\n\n"
+
+    for relation in all_relations:
+        s += generate_relation_sql_text(relation, path)
+        s += "\n"
+
+    s += "\n"
+    root.set_id(0)
+    s += "SELECT SUM(\n"
+
+    s += root.generate_sql()
+    s += ")\nFROM "
+    s += " NATURAL JOIN ".join([rel.name for rel in all_relations])
+    s += ";\n\n"
+
+    print(s)
+
+    return s
+
+
+def generate_relation_sql_text(relation: "Relation", path: str):
+    s = f"CREATE STREAM {relation.name} (\n"
+    for key, value in relation.variables.items():
+        s += f"\t{key} \t {tpch_sql_type_table[key]}, \n"
+    s = s[:-3]
+    s += f") \nFROM FILE './datasets/{path}/{relation.name}.csv' \nLINE DELIMITED CSV (delimiter := '|');\n"
+    return s
 
 
 def generate_retailer_all():
@@ -313,12 +482,29 @@ def generate_TPCH_3_Q3():
     return res
 
 
-def generate_TPCH_7_Q1():
+def generate_TPCH_7_Q1(sql=False, query_group: str = "", q: str = "", path: str = ""):
     root = VariableOrderNode("regionkey")
     relations = [Nation, Region]
     free_vars = {"regionkey", "nationkey", "n_name",
                  "r_name", "r_comment", "n_comment"}
-    res = generate_txt(relations, root, free_vars)
+
+    res = generate_txt(relations, root, free_vars) if not sql else generate_sql_text(
+        relations, root, free_vars, query_group, q, path)
+    return res
+
+
+def generate_TPCH_7_Q2(sql=False, query_group: str = "", q: str = "", path: str = ""):
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    nation.add_child(region)
+
+    relations = [Nation, Region, Customer]
+    free_vars = {"custkey", "c_name", "regionkey", "nationkey", "n_name",
+                 "r_name", "r_comment", "n_comment"}
+    res = generate_txt(relations, nation, free_vars) if not sql else generate_sql_text(
+        relations, nation, free_vars, query_group, q, path)
+    res += "\n"
     return res
 
 
@@ -337,5 +523,11 @@ def generate_TPCH_7_Q1():
 # generate_TPCH_5_Q3()
 # generate_retailer_aggr_Q1()
 # generate_TPCH_3_Q3()
-generate_TPCH_7_Q1()
-print("done")
+
+# big queries
+# generate_TPCH_7_Q1(True)
+
+generate_TPCH_7_Q2(True, "tpch_7_1*1", "Q2", "tpch_unordered1")
+# generate_TPCH_7_Q2(False)
+
+# print("done")
