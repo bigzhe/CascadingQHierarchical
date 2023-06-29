@@ -1,3 +1,4 @@
+import sys
 from typing import List
 
 
@@ -7,6 +8,7 @@ class Relation:
         self.variables: dict[str, str] = variables
         self.private_keys: set[str] = private_keys
         self.last_variable: "VariableOrderNode | None" = None
+        self.join_variables: set[str] = set()
 
     def var_type(self):
         s = ""
@@ -21,10 +23,28 @@ class Relation:
         return self.name
 
 
+def visualize_node(node, level: int = 0):
+    # each level of the tree adds two spaces to the indentation
+    print(" " * level * 4 + node.name)
+    for child in node.children:
+        # recursive call with increased indentation level
+        visualize_node(child, level + 1)
+
+
+def compute_descendants(node):
+    for child in node.children:
+        node.descendants.append(child)
+        # add all descendants of the child to the current node's descendants
+        node.descendants += compute_descendants(child)
+    return node.descendants
+
+
 class VariableOrderNode:
     def __init__(self, name: str, data_type: str = "int", all_non_join_below: bool = False):
         self.name: str = name
         self.children: "List[VariableOrderNode]" = []
+        # add descendants attribute
+        self.descendants: "List[VariableOrderNode]" = []
         self.parent: "VariableOrderNode | None" = None
         self.id = -1
         self.data_type = data_type
@@ -33,6 +53,12 @@ class VariableOrderNode:
     def add_child(self, child: "VariableOrderNode"):
         self.children.append(child)
         child.parent = self
+
+    def descendants_variables(self):
+        res: set[str] = set()
+        for child in self.descendants:
+            res.add(child.name)
+        return res
 
     def child_variables(self):
         res: set[str] = set()
@@ -80,9 +106,6 @@ class VariableOrderNode:
 
         for child in vars:
             s += child.generate_sql()
-
-        # remove the last *
-        s = s[:-2] + "\n"
 
         return s
 
@@ -138,8 +161,8 @@ Retailer_3_Q2 = Relation("R3q2", {"ksn": "int", "locn": "int", "dateid": "int",
 
 Part = Relation("part", {"partkey": "int", "p_name": "string", "p_mfgr": "string", "p_brand": "string", "p_type": "string",
                 "p_size": "int", "p_container": "string", "p_retailprice": "double", "p_comment": "string"}, {"partkey"})
-Supplier = Relation("supplier", {"suppkey": "int", "s_name": "string", "s_address": "string", "nationkey": "int",
-                    "s_phone": "string", "s_acctbal": "double", "s_comment": "string"}, {"suppkey", "nationkey"})
+Supplier = Relation("supplier", {"suppkey": "int", "s_name": "string", "s_address": "string", "s_nationkey": "int",
+                    "s_phone": "string", "s_acctbal": "double", "s_comment": "string"}, {"suppkey", "s_nationkey"})
 PartSupp = Relation("partsupp", {"partkey": "int", "suppkey": "int", "ps_availqty": "int",
                     "ps_supplycost": "double", "ps_comment": "string"}, {"partkey", "suppkey"})
 Customer = Relation("customer", {"custkey": "int", "c_name": "string", "c_address": "string", "nationkey": "int",
@@ -155,11 +178,13 @@ Region = Relation("region", {
 TPCH_1_Q2 = Relation("q2", {"orderkey": "int", "partkey": "int", "suppkey": "int",
                      "l_quantity": "double", "o_totalprice": "double"}, {"partkey", "suppkey"})
 
+
 tpch_sql_type_table = {
     "custkey": "INT",
     "c_name": "VARCHAR(25)",
     "c_address": "VARCHAR(40)",
     "nationkey": "INT",
+    "s_nationkey": "INT",
     "c_phone": "CHAR(15)",
     "c_acctbal": "DECIMAL",
     "c_mktsegment": "CHAR(10)",
@@ -220,20 +245,17 @@ def generate_txt(all_relations: "List[Relation]", root: "VariableOrderNode", fre
     for relation in all_relations:
         iterator = root
         while True:
-            found = False
-            for child in iterator.children:
-                if (child.child_variables().union({child.name})).intersection(relation.private_keys):
-                    iterator = child
-                    found = True
-                    break
-            if not found:
+            if set(iterator.child_variables()).isdisjoint(set(relation.variables.keys())):
+                # append the free variables to iterator
                 variables_to_add = set(relation.variables.keys()).difference(
                     iterator.parent_variables().union({iterator.name}))
+
                 for variable in variables_to_add.intersection(free_variables):
                     new_node = VariableOrderNode(
                         variable, relation.variables[variable])
                     iterator.add_child(new_node)
                     iterator = new_node
+
                 for variable in variables_to_add.difference(free_variables):
                     new_node = VariableOrderNode(
                         variable, relation.variables[variable])
@@ -241,6 +263,12 @@ def generate_txt(all_relations: "List[Relation]", root: "VariableOrderNode", fre
                     iterator = new_node
                 relation.last_variable = iterator
                 break
+            else:
+                for child in iterator.children:
+                    if not (set(child.child_variables()).union({child.name})).isdisjoint(set(relation.variables.keys())):
+                        iterator = child
+                        break
+
     root.set_id(0)
     all_vars = set()
     for rel in all_relations:
@@ -254,22 +282,25 @@ def generate_txt(all_relations: "List[Relation]", root: "VariableOrderNode", fre
     return config_file
 
 
+def compute_join_variables(relations):
+    join_vars = set(relations[0].variables.keys())
+    for rel in relations:
+        join_vars = join_vars.intersection(set(rel.variables.keys()))
+    return join_vars
+
+
 def generate_sql_text(all_relations: "List[Relation]", root: "VariableOrderNode", free_variables: set[str], query_group: str, q: str, path: str):
+
+    # join_variables = compute_join_variables(all_relations)
 
     for relation in all_relations:
         iterator = root
         while True:
-            found = False
-            for child in iterator.children:
-                if (child.child_variables().union({child.name})).intersection(relation.private_keys):
-                    iterator = child
-                    found = True
-                    break
-            if not found:
+            if set(iterator.child_variables()).isdisjoint(set(relation.variables.keys())):
+                # append the free variables to iterator
                 variables_to_add = set(relation.variables.keys()).difference(
                     iterator.parent_variables().union({iterator.name}))
 
-                # add free variables first
                 for variable in variables_to_add.intersection(free_variables):
                     new_node = VariableOrderNode(
                         variable, relation.variables[variable])
@@ -278,6 +309,13 @@ def generate_sql_text(all_relations: "List[Relation]", root: "VariableOrderNode"
                     iterator.all_non_join_below = True
                 relation.last_variable = iterator
                 break
+            else:
+                for child in iterator.children:
+                    if not (set(child.child_variables()).union({child.name})).isdisjoint(set(relation.variables.keys())):
+                        iterator = child
+                        break
+
+    # visualize_node(root)
 
     s = f"IMPORT DTREE FROM FILE '{query_group}-{q}.txt';"
     s += "\n\n"
@@ -295,6 +333,8 @@ def generate_sql_text(all_relations: "List[Relation]", root: "VariableOrderNode"
     s += "SELECT SUM(\n"
 
     s += root.generate_sql()
+    # remove the last *
+    s = s[::-1].replace('*', "", 1)[::-1]
     s += ")\nFROM "
     s += " NATURAL JOIN ".join([rel.name for rel in all_relations])
     s += ";\n\n"
@@ -482,18 +522,20 @@ def generate_TPCH_3_Q3():
     return res
 
 
-def generate_TPCH_7_Q1(sql=False, query_group: str = "", q: str = "", path: str = ""):
+def generate_TPCH_7_Q1():
     root = VariableOrderNode("regionkey")
     relations = [Nation, Region]
     free_vars = {"regionkey", "nationkey", "n_name",
                  "r_name", "r_comment", "n_comment"}
 
-    res = generate_txt(relations, root, free_vars) if not sql else generate_sql_text(
-        relations, root, free_vars, query_group, q, path)
-    return res
+    return (root, relations, free_vars)
+
+    # res = generate_txt(relations, root, free_vars) if not sql else generate_sql_text(
+    #     relations, root, free_vars, query_group, q, path)
+    # return res
 
 
-def generate_TPCH_7_Q2(sql=False, query_group: str = "", q: str = "", path: str = ""):
+def generate_TPCH_7_Q2():
     nation = VariableOrderNode("nationkey")
     region = VariableOrderNode("regionkey")
 
@@ -502,10 +544,108 @@ def generate_TPCH_7_Q2(sql=False, query_group: str = "", q: str = "", path: str 
     relations = [Nation, Region, Customer]
     free_vars = {"custkey", "c_name", "regionkey", "nationkey", "n_name",
                  "r_name", "r_comment", "n_comment"}
-    res = generate_txt(relations, nation, free_vars) if not sql else generate_sql_text(
-        relations, nation, free_vars, query_group, q, path)
-    res += "\n"
-    return res
+
+    return (nation, relations, free_vars)
+
+    # res = generate_txt(relations, nation, free_vars) if not sql else generate_sql_text(
+    #     relations, nation, free_vars, query_group, q, path)
+    # res += "\n"
+    # return res
+
+
+def generate_TPCH_7_Q3():
+    root = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    root.add_child(nation)
+    nation.add_child(region)
+
+    relations = [Nation, Region, Customer, Orders]
+    free_vars = {"custkey", "c_name", "regionkey", "nationkey", "n_name",
+                 "r_name", "r_comment", "n_comment", "orderkey", "o_orderstatus"}
+
+    return (root, relations, free_vars)
+
+
+def generate_TPCH_7_Q4():
+    root = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    root.add_child(custkey)
+    custkey.add_child(nation)
+    nation.add_child(region)
+
+    relations = [Nation, Region, Customer, Orders, Lineitem]
+    free_vars = {"custkey", "c_name", "regionkey", "nationkey", "n_name",
+                 "r_name", "r_comment", "n_comment", "orderkey", "o_orderstatus", "partkey", "l_quantity", "suppkey"}
+
+    return (root, relations, free_vars)
+
+
+def generate_TPCH_7_Q5():
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    orderkey.add_child(partkey)
+
+    orderkey.add_child(custkey)
+    custkey.add_child(nation)
+    nation.add_child(region)
+
+    relations = [Nation, Region, Customer, Orders, Lineitem, PartSupp, Part]
+    free_vars = {"custkey", "c_name", "regionkey", "nationkey", "n_name",
+                 "r_name", "r_comment", "n_comment", "orderkey", "o_orderstatus", "partkey", "l_quantity", "suppkey", "ps_avalqty", "p_name"}
+
+    return (orderkey, relations, free_vars)
+
+
+def generate_TPCH_7_Q6():
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    orderkey.add_child(partkey)
+
+    orderkey.add_child(custkey)
+    custkey.add_child(nation)
+    nation.add_child(region)
+
+    relations = [Nation, Region, Customer, Orders, Lineitem, PartSupp, Part]
+    free_vars = {"custkey", "c_name", "regionkey", "nationkey", "n_name",
+                 "r_name", "r_comment", "n_comment", "orderkey", "o_orderstatus", "partkey", "l_quantity", "suppkey", "ps_avalqty", "p_name"}
+
+    return (orderkey, relations, free_vars)
+
+
+def generate_TPCH_7_Q7():
+    suppkey = VariableOrderNode("suppkey")
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    orderkey.add_child(partkey)
+    partkey.add_child(suppkey)
+
+    orderkey.add_child(custkey)
+    custkey.add_child(nation)
+    nation.add_child(region)
+
+    relations = [Nation, Region, Customer, Orders,
+                 Lineitem, PartSupp, Part, Supplier]
+    free_vars = {"custkey", "c_name", "regionkey", "nationkey", "n_name",
+                 "r_name", "r_comment", "n_comment", "orderkey", "o_orderstatus", "partkey", "l_quantity", "suppkey", "ps_avalqty", "p_name", "s_name"}
+
+    return (orderkey, relations, free_vars)
 
 
 # generate_retailer_4Q1a()
@@ -524,10 +664,49 @@ def generate_TPCH_7_Q2(sql=False, query_group: str = "", q: str = "", path: str 
 # generate_retailer_aggr_Q1()
 # generate_TPCH_3_Q3()
 
-# big queries
-# generate_TPCH_7_Q1(True)
-
-generate_TPCH_7_Q2(True, "tpch_7_1*1", "Q2", "tpch_unordered1")
-# generate_TPCH_7_Q2(False)
 
 # print("done")
+
+
+def main(args):
+    # big queries
+    # generate_TPCH_7_Q1(True)
+
+    # generate_TPCH_7_Q2(False)
+    query_group = args[0]
+    q = args[1]
+    path = args[2]
+    is_sql = args[3] == "sql"
+    # if args has 5 elements, then we are redirecting the output to a file
+    redirect = len(args) == 5
+
+    root, relations, free_vars = None, None, None
+
+    if q == "Q1":
+        root, relations, free_vars = generate_TPCH_7_Q1()
+    elif q == "Q2":
+        root, relations, free_vars = generate_TPCH_7_Q2()
+    elif q == "Q3":
+        root, relations, free_vars = generate_TPCH_7_Q3()
+    elif q == "Q4":
+        root, relations, free_vars = generate_TPCH_7_Q4()
+    elif q == "Q5":
+        root, relations, free_vars = generate_TPCH_7_Q5()
+    elif q == "Q6":
+        root, relations, free_vars = generate_TPCH_7_Q6()
+    elif q == "Q7":
+        root, relations, free_vars = generate_TPCH_7_Q7()
+
+    res = generate_txt(relations, root, free_vars) if not is_sql else generate_sql_text(
+        relations, root, free_vars, query_group, q, path)
+    res += "\n"
+
+    if not redirect:
+        visualize_node(root)
+
+    return res
+
+
+if __name__ == "__main__":
+    # Pass the command-line arguments (excluding the script name) to the main function
+    main(sys.argv[1:])
