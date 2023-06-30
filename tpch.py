@@ -311,39 +311,49 @@ def example_8():
 
     Q1 = Query("Q1", OrderedSet([PartSupp, LineItem]),
                OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]))
-    Q3 = Query("Q3", OrderedSet([PartSupp, LineItem, Orders]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]))
-    Q4 = Query("Q4", OrderedSet([PartSupp, LineItem, Part]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]))
+    Q1Relation = Relation("Q1", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]), None, Q1)
 
+    Q4 = Query("Q4", OrderedSet([PartSupp, LineItem, Part]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]),
+               OrderedSet([Q1Relation, Part]))
+    Q4Relation = Relation("Q4", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]), None, Q4)
+
+    Q3 = Query("Q3", OrderedSet([PartSupp, LineItem, Orders]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]),
+               OrderedSet([Q1Relation, Orders]))
+    Q3Relation = Relation("Q3", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]), None, Q3)
 
     Q2 = Query("Q2", OrderedSet([Orders, Customer]),
                OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]))
+    Q2Relation = Relation("Q2", OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]), None, Q2)
+
     Q5 = Query("Q5", OrderedSet([Orders, Customer, LineItem, PartSupp]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]))
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]),
+               OrderedSet([Q3Relation, Q2Relation]))
+    Q5Relation = Relation("Q5", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]), None, Q5)
+
     Q6 = Query("Q6", OrderedSet([Orders, Customer, LineItem, PartSupp, Part]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]))
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]),
+               OrderedSet([Q5Relation, Part]))
+    Q6Relation = Relation("Q6", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]), None, Q6)
 
+    Q7 = Query("Q7", OrderedSet([Orders, Customer, LineItem, PartSupp, Part, Supplier]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME", "S_NAME"]),
+               OrderedSet([Q6Relation, Supplier]))
 
-
-    print("Q1 is q-hier: ", Q1.is_q_hierarchical())
-    print("Q2 is q-hier: ", Q2.is_q_hierarchical())
-    print("Q3 is q-hier: ", Q3.is_q_hierarchical())
-    print("Q4 is q-hier: ", Q4.is_q_hierarchical())
-    print("Q5 is q-hier: ", Q5.is_q_hierarchical())
-    print("Q6 is q-hier: ", Q6.is_q_hierarchical())
+    # print("Q1 is q-hier: ", Q1.is_q_hierarchical())
+    # print("Q2 is q-hier: ", Q2.is_q_hierarchical())
+    # print("Q3 is q-hier: ", Q3.is_q_hierarchical())
+    # print("Q4 is q-hier: ", Q4.is_q_hierarchical())
+    # print("Q5 is q-hier: ", Q5.is_q_hierarchical())
+    # print("Q6 is q-hier: ", Q6.is_q_hierarchical())
 
     # res_list = run([Q1, Q2, Q3, Q5, Q4, Q6])
     # res_list = run([Q1, Q4])
     # res_list = run([Q1, Q2, Q3, Q5])
 
-
-    Q4 = Query("Q4", OrderedSet([PartSupp, LineItem, Part]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]),
-               OrderedSet([Q1, Part]))
-    Q4.dependant_on = OrderedSet([Q1]) 
-
-    res_list = [QuerySet(OrderedSet([Q1, Q4]))]
+    res = QuerySet({Q1, Q2, Q3, Q4, Q5, Q6, Q7})
+    res_list = [res]
 
     for (i, res) in enumerate(res_list):
         for tpch in dataset_version:

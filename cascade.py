@@ -52,7 +52,7 @@ def run(queries: "list[Query]"):
         if len(queries) <= len(res):
             compatible = list(map(lambda x: QuerySet(x), filter(lambda x: len(
                 x) == len(queries), find_compatible_reductions(list(res)))))
-            if len(compatible) > 3:
+            if len(compatible) > 0:
                 print(len(compatible))
                 return compatible
 
