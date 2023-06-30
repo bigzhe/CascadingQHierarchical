@@ -390,10 +390,18 @@ def example_9():
 
     Q2 = Query("Q2", OrderedSet([Orders, Customer]),
                OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]))
+    Q2Relation = Relation("Q2", OrderedSet(
+        ["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]), None, Q2)
     Q1 = Query("Q1", OrderedSet([Orders, LineItem]),
                OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER"]))
+    Q1Relation = Relation("Q1", OrderedSet(
+        ["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER"]), None, Q1)
+    Q3 = Query("Q3", OrderedSet([Orders, LineItem, Customer]),
+               OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER", "CUSTKEY", "C_NAME"]),
+               OrderedSet([Q1Relation, Q2Relation]))
 
-    res = QuerySet({Q1, Q2})
+
+    res = QuerySet({Q1, Q2, Q3})
     res_list = [res]
 
     for (i, res) in enumerate(res_list):
