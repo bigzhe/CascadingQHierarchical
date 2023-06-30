@@ -9,7 +9,7 @@ from Relation import Relation
 
 dataset_version = ["1", "10"]
 base_dataset = "tpch"
-view = True
+view = False
 
 Part = Relation("part", OrderedSet(
     ["PARTKEY", "P_NAME", "P_MFGR", "P_BRAND", "P_TYPE", "P_SIZE", "P_CONTAINER", "P_RETAILPRICE", "P_COMMENT"]))
@@ -370,8 +370,9 @@ def example_8():
 
         if view:
             res.graph_viz(f"TPCH_8_{i}")
-        else:
-            print("No result")
+
+    if len(res_list) == 0:
+        print("No result")
 
 
 if __name__ == "__main__":
