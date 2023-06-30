@@ -311,34 +311,45 @@ def example_8():
 
     Q1 = Query("Q1", OrderedSet([PartSupp, LineItem]),
                OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]))
-    Q1Relation = Relation("Q1", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]), None, Q1)
+    Q1Relation = Relation("Q1", OrderedSet(
+        ["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]), None, Q1)
 
     Q4 = Query("Q4", OrderedSet([PartSupp, LineItem, Part]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY",
+                          "L_LINENUMBER", "ORDERKEY", "P_NAME"]),
                OrderedSet([Q1Relation, Part]))
-    Q4Relation = Relation("Q4", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]), None, Q4)
+    Q4Relation = Relation("Q4", OrderedSet(
+        ["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]), None, Q4)
 
     Q3 = Query("Q3", OrderedSet([PartSupp, LineItem, Orders]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY",
+                          "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]),
                OrderedSet([Q1Relation, Orders]))
-    Q3Relation = Relation("Q3", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]), None, Q3)
+    Q3Relation = Relation("Q3", OrderedSet(
+        ["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]), None, Q3)
 
     Q2 = Query("Q2", OrderedSet([Orders, Customer]),
                OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]))
-    Q2Relation = Relation("Q2", OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]), None, Q2)
+    Q2Relation = Relation("Q2", OrderedSet(
+        ["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]), None, Q2)
 
     Q5 = Query("Q5", OrderedSet([Orders, Customer, LineItem, PartSupp]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER",
+                          "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]),
                OrderedSet([Q3Relation, Q2Relation]))
-    Q5Relation = Relation("Q5", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]), None, Q5)
+    Q5Relation = Relation("Q5", OrderedSet(
+        ["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]), None, Q5)
 
     Q6 = Query("Q6", OrderedSet([Orders, Customer, LineItem, PartSupp, Part]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER",
+                          "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]),
                OrderedSet([Q5Relation, Part]))
-    Q6Relation = Relation("Q6", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]), None, Q6)
+    Q6Relation = Relation("Q6", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER",
+                          "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]), None, Q6)
 
     Q7 = Query("Q7", OrderedSet([Orders, Customer, LineItem, PartSupp, Part, Supplier]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME", "S_NAME"]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER",
+                          "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME", "S_NAME"]),
                OrderedSet([Q6Relation, Supplier]))
 
     # print("Q1 is q-hier: ", Q1.is_q_hierarchical())
@@ -375,6 +386,36 @@ def example_8():
         print("No result")
 
 
+def example_9():
+
+    Q2 = Query("Q2", OrderedSet([Orders, Customer]),
+               OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]))
+    Q1 = Query("Q1", OrderedSet([Orders, LineItem]),
+               OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER"]))
+
+    res = QuerySet({Q1, Q2})
+    res_list = [res]
+
+    for (i, res) in enumerate(res_list):
+        for tpch in dataset_version:
+            multigenerator = M3MultiQueryGenerator(
+                base_dataset,
+                f"9_{i}",
+                str(tpch),
+                'RingFactorizedRelation',
+                res,
+                datatypes,
+                "tbl"
+            )
+            multigenerator.generate(batch=True)
+
+        if view:
+            res.graph_viz(f"TPCH_9_{i}")
+
+    if len(res_list) == 0:
+        print("No result")
+
+
 if __name__ == "__main__":
     # example_1()
     # example_2()
@@ -383,4 +424,5 @@ if __name__ == "__main__":
     # example_5()
     # example_6()
     # example_7()
-    example_8()
+    # example_8()
+    example_9()
