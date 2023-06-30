@@ -2,8 +2,9 @@
 
 # queries=("Q1" "Q2" "Q3" "Q4" "Q5" "Q6", "Q7")
 
-queries=("Q7")
-file_prefix="tpch_7_1*1"
+queries=("Q1")
+file_prefix="tpch_8_0*1"
+# file_prefix="tpch_7_1*1"
 file_path="/local/scratch/zhang/cavier/FIVM/examples/queries/tpch_7_1/"
 
 redirect="$1"  # Get the value of the first input parameter

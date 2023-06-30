@@ -647,26 +647,112 @@ def generate_TPCH_7_Q7():
 
     return (orderkey, relations, free_vars)
 
+def generate_TPCH_8_Q1():
+    suppkey = VariableOrderNode("suppkey")
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
 
-# generate_retailer_4Q1a()
-# generate_retailer_4Q1b()
-# generate_retailer_4Q2()
-# generate_retailer_1Q1b()
-# generate_retailer_1Q1c()
-# generate_retailer_3Q1c()
-# generate_TPCH_3Q2()
-# generate_TPCH_1Q1b()
-# generate_TPCH_1Q1c()
-# generate_TPCH_4Q3()
-# generate_TPCH_5_Q1()
-# generate_TPCH_5_Q2()
-# generate_TPCH_5_Q3()
-# generate_retailer_aggr_Q1()
-# generate_TPCH_3_Q3()
+    suppkey.add_child(partkey)
+
+    relations = [PartSupp, Lineitem]
+    free_vars = {"ps_avalqty", "partkey", "suppkey", "l_quantity", "orderkey"}
+
+    return (suppkey, relations, free_vars)
+
+def generate_TPCH_8_Q2():
+    suppkey = VariableOrderNode("suppkey")
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    relations = [Orders, Customer]
+    free_vars = {"orderkey", "custkey", "o_orderstatus", "c_name"}
+
+    return (custkey, relations, free_vars)
+
+def generate_TPCH_8_Q3():
+    suppkey = VariableOrderNode("suppkey")
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    orderkey.add_child(partkey)
+    partkey.add_child(suppkey)
+
+    relations = [PartSupp, Lineitem, Orders]
+    free_vars = {"ps_avalqty", "partkey", "suppkey", "l_quantity", "orderkey", "o_orderstatus", "custkey"}
+
+    return (orderkey, relations, free_vars)
+
+def generate_TPCH_8_Q4():
+    suppkey = VariableOrderNode("suppkey")
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
+
+    suppkey.add_child(partkey)
+
+    relations = [PartSupp, Lineitem, Part]
+    free_vars = {"ps_avalqty", "partkey", "suppkey", "l_quantity", "orderkey", "p_name"}
+
+    return (suppkey, relations, free_vars)
+
+def generate_TPCH_8_Q5():
+    suppkey = VariableOrderNode("suppkey")
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+    nation = VariableOrderNode("nationkey")
+    region = VariableOrderNode("regionkey")
 
 
-# print("done")
+    orderkey.add_child(partkey)
+    partkey.add_child(suppkey)
+    orderkey.add_child(custkey)
 
+    relations = [PartSupp, Lineitem, Orders, Customer]
+    free_vars = {"ps_avalqty", "partkey", "suppkey", "l_quantity", "orderkey", "o_orderstatus", "custkey", "c_name"}
+
+    return (orderkey, relations, free_vars)
+
+def generate_TPCH_8_Q6():
+    suppkey = VariableOrderNode("suppkey")
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+
+    orderkey.add_child(partkey)
+    partkey.add_child(suppkey)
+    orderkey.add_child(custkey)
+
+    relations = [PartSupp, Lineitem, Orders, Customer, Part]
+    free_vars = {"ps_avalqty", "partkey", "suppkey", "l_quantity", "orderkey", "o_orderstatus", "custkey", "c_name", "p_name"}
+
+    return (orderkey, relations, free_vars)
+
+def generate_TPCH_8_Q7():
+    suppkey = VariableOrderNode("suppkey")
+    partkey = VariableOrderNode("partkey")
+    orderkey = VariableOrderNode("orderkey")
+    custkey = VariableOrderNode("custkey")
+
+    orderkey.add_child(partkey)
+    partkey.add_child(suppkey)
+    orderkey.add_child(custkey)
+
+    relations = [PartSupp, Lineitem, Orders, Customer, Part, Supplier]
+    free_vars = {"ps_avalqty", "partkey", "suppkey", "l_quantity", "orderkey", "o_orderstatus", "custkey", "c_name", "p_name", "s_name"}
+
+    return (orderkey, relations, free_vars)
 
 def main(args):
     # big queries
@@ -682,20 +768,34 @@ def main(args):
 
     root, relations, free_vars = None, None, None
 
-    if q == "Q1":
+    if q == "Q1" and query_group == "tpch_7_1*1":
         root, relations, free_vars = generate_TPCH_7_Q1()
-    elif q == "Q2":
+    elif q == "Q2" and query_group == "tpch_7_1*1":
         root, relations, free_vars = generate_TPCH_7_Q2()
-    elif q == "Q3":
+    elif q == "Q3" and query_group == "tpch_7_1*1":
         root, relations, free_vars = generate_TPCH_7_Q3()
-    elif q == "Q4":
+    elif q == "Q4" and query_group == "tpch_7_1*1":
         root, relations, free_vars = generate_TPCH_7_Q4()
-    elif q == "Q5":
+    elif q == "Q5" and query_group == "tpch_7_1*1":
         root, relations, free_vars = generate_TPCH_7_Q5()
-    elif q == "Q6":
+    elif q == "Q6" and query_group == "tpch_7_1*1":
         root, relations, free_vars = generate_TPCH_7_Q6()
-    elif q == "Q7":
+    elif q == "Q7" and query_group == "tpch_7_1*1":
         root, relations, free_vars = generate_TPCH_7_Q7()
+    elif q == "Q1" and query_group == "tpch_8_0*1":
+        root, relations, free_vars = generate_TPCH_8_Q1()
+    elif q == "Q2" and query_group == "tpch_8_0*1":
+        root, relations, free_vars = generate_TPCH_8_Q2()
+    elif q == "Q3" and query_group == "tpch_8_0*1":
+        root, relations, free_vars = generate_TPCH_8_Q3()
+    elif q == "Q4" and query_group == "tpch_8_0*1":
+        root, relations, free_vars = generate_TPCH_8_Q4()
+    elif q == "Q5" and query_group == "tpch_8_0*1":
+        root, relations, free_vars = generate_TPCH_8_Q5()
+    elif q == "Q6" and query_group == "tpch_8_0*1":
+        root, relations, free_vars = generate_TPCH_8_Q6()
+    elif q == "Q7" and query_group == "tpch_8_0*1":
+        root, relations, free_vars = generate_TPCH_8_Q7()
 
     res = generate_txt(relations, root, free_vars) if not is_sql else generate_sql_text(
         relations, root, free_vars, query_group, q, path)
