@@ -9,8 +9,7 @@ from Relation import Relation
 
 dataset_version = ["_unordered1", "_unordered10"]
 base_dataset = "tpch"
-view = True
-# base_dataset = "jcch"
+view = False  # base_dataset = "jcch"
 # view = False
 
 Part = Relation("part", OrderedSet(
@@ -262,12 +261,15 @@ def example_6():
     else:
         print("No result")
 
+
 def tpch_haozhe():
     Q1 = Query("Q1", OrderedSet([PartSupp, LineItem]),
                OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]))
-    Q1Relation = Relation("Q1", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]), None, Q1)
+    Q1Relation = Relation("Q1", OrderedSet(
+        ["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY"]), None, Q1)
     Q4 = Query("Q4", OrderedSet([PartSupp, LineItem, Part]),
-               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]),
+               OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY",
+                          "L_LINENUMBER", "ORDERKEY", "P_NAME"]),
                OrderedSet([Q1Relation, Part]))
     res = QuerySet({Q1, Q4})
     if res:
@@ -294,7 +296,8 @@ def example_9():
     Q1Relation = Relation("Q1", OrderedSet(
         ["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER"]), None, Q1)
     Q3 = Query("Q3", OrderedSet([Orders, LineItem, Customer]),
-               OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER", "CUSTKEY", "C_NAME"]),
+               OrderedSet(["O_ORDERSTATUS", "ORDERKEY",
+                          "L_LINENUMBER", "CUSTKEY", "C_NAME"]),
                OrderedSet([Q1Relation, Q2Relation]))
     Q3.dependant_on.update({Q1, Q2})
     res = QuerySet({Q1, Q2, Q3})
@@ -319,32 +322,60 @@ def example_9():
     if len(res_list) == 0:
         print("No result")
 
+
 def example_big_1():
     Q1 = Query("Q1", OrderedSet([Nation, Region]),
                OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY"]))
+    Q1Relation = Relation("Q1", OrderedSet(
+        ["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY"]), None, Q1)
+
     Q2 = Query("Q2", OrderedSet([Nation, Region, Customer]),
-               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY"]))
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY"]),
+               OrderedSet([Q1Relation, Customer]))
+    Q2Relation = Relation("Q2", OrderedSet(
+        ["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY"]), None, Q2)
+    Q2.dependant_on.update({Q1})
+
     Q3 = Query("Q3", OrderedSet([Nation, Region, Customer, Orders]),
-               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS"]))
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS"]),
+                OrderedSet([Q2Relation, Orders]))
+    Q3Relation = Relation("Q3", OrderedSet(
+        ["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS"]), None, Q3)
+    Q3.dependant_on.update({Q1,Q2})
+
     Q4 = Query("Q4", OrderedSet([Nation, Region, Customer, Orders, LineItem]),
-               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY"]))
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY"]),
+               OrderedSet([Q3Relation, LineItem]))
+    Q4Relation = Relation("Q4", OrderedSet(
+        ["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY"]), None, Q4)
+    Q4.dependant_on.update({Q1, Q2,Q3})
+
     Q5 = Query("Q5", OrderedSet([Nation, Region, Customer, Orders, LineItem, PartSupp]),
-               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY"]))
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY"]),
+               OrderedSet([Q4Relation, PartSupp]))
+    Q5Relation = Relation("Q5", OrderedSet(
+        ["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY"]), None, Q5)
+    Q5.dependant_on.update({Q1, Q2, Q3, Q4})
+
     Q6 = Query("Q6", OrderedSet([Nation, Region, Customer, Orders, LineItem, PartSupp, Part]),
                OrderedSet(["N_NAME", "R_NAME", "NATIONKEY",
-                           "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY", "P_NAME"]))
+                           "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY", "P_NAME"]),
+                OrderedSet([Q5Relation, Part]))
+    Q6Relation = Relation("Q6", OrderedSet(
+        ["N_NAME", "R_NAME", "NATIONKEY",
+            "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY", "P_NAME"]), None, Q6)
+    Q6.dependant_on.update({Q1, Q2, Q3, Q4, Q5})
+                    
     Q7 = Query("Q7", OrderedSet([Nation, Region, Customer, Orders, LineItem, PartSupp, Part, Supplier]),
-               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY", "S_NAME", "P_NAME"]))
+               OrderedSet(["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY", "S_NAME", "P_NAME"]),
+                OrderedSet([Q6Relation, Supplier]))
+    # Q7Relation = Relation("Q7", OrderedSet(
+        # ["N_NAME", "R_NAME", "NATIONKEY", "REGIONKEY", "C_NAME", "ORDERKEY", "CUSTKEY", "ORDERKEY", "O_ORDERSTATUS", "PARTKEY", "L_LINENUMBER", "SUPPKEY", "PS_AVAILQTY", "S_NAME", "P_NAME"]), None, Q7)
+    Q7.dependant_on.update({Q1, Q2, Q3, Q4, Q5, Q6})
 
-    print("Q1 is q-hier: ", Q1.is_q_hierarchical())
-    print("Q2 is q-hier: ", Q2.is_q_hierarchical())
-    print("Q3 is q-hier: ", Q3.is_q_hierarchical())
-    print("Q4 is q-hier: ", Q4.is_q_hierarchical())
-    print("Q5 is q-hier: ", Q5.is_q_hierarchical())
-    print("Q6 is q-hier: ", Q6.is_q_hierarchical())
-    print("Q7 is q-hier: ", Q7.is_q_hierarchical())
+    res = QuerySet({Q1, Q2, Q3, Q4, Q5, Q6, Q7})
+    res_list = [res]
 
-    res_list = run([Q1, Q2, Q3, Q4, Q5, Q6, Q7])
     for (i, res) in enumerate(res_list):
         # if res:
         for tpch in dataset_version:
@@ -379,12 +410,15 @@ def example_big_2():
     Q4Relation = Relation("Q4", OrderedSet(
         ["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "P_NAME"]), None, Q4)
 
+    Q4.dependant_on.update({Q1})
+
     Q3 = Query("Q3", OrderedSet([PartSupp, LineItem, Orders]),
                OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY",
                           "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]),
                OrderedSet([Q1Relation, Orders]))
     Q3Relation = Relation("Q3", OrderedSet(
         ["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY"]), None, Q3)
+    Q3.dependant_on.update({Q1})
 
     Q2 = Query("Q2", OrderedSet([Orders, Customer]),
                OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]))
@@ -397,6 +431,7 @@ def example_big_2():
                OrderedSet([Q3Relation, Q2Relation]))
     Q5Relation = Relation("Q5", OrderedSet(
         ["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER", "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME"]), None, Q5)
+    Q5.dependant_on.update({Q3, Q2, Q1})
 
     Q6 = Query("Q6", OrderedSet([Orders, Customer, LineItem, PartSupp, Part]),
                OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER",
@@ -404,11 +439,13 @@ def example_big_2():
                OrderedSet([Q5Relation, Part]))
     Q6Relation = Relation("Q6", OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER",
                           "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME"]), None, Q6)
+    Q6.dependant_on.update({Q5, Q3, Q2, Q1})
 
     Q7 = Query("Q7", OrderedSet([Orders, Customer, LineItem, PartSupp, Part, Supplier]),
                OrderedSet(["PS_AVAILQTY", "PARTKEY", "SUPPKEY", "L_LINENUMBER",
                           "ORDERKEY", "O_ORDERSTATUS", "CUSTKEY", "C_NAME", "P_NAME", "S_NAME"]),
                OrderedSet([Q6Relation, Supplier]))
+    Q7.dependant_on.update({Q6, Q5, Q3, Q2, Q1})
 
     # print("Q1 is q-hier: ", Q1.is_q_hierarchical())
     # print("Q2 is q-hier: ", Q2.is_q_hierarchical())
@@ -443,6 +480,7 @@ def example_big_2():
     if len(res_list) == 0:
         print("No result")
 
+
 def example_11():
     Q2 = Query("Q2", OrderedSet([Orders, Customer]),
                OrderedSet(["O_ORDERSTATUS", "C_NAME", "ORDERKEY", "CUSTKEY"]))
@@ -453,7 +491,8 @@ def example_11():
     Q1Relation = Relation("Q1", OrderedSet(
         ["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER"]), None, Q1)
     Q3 = Query("Q3", OrderedSet([Orders, LineItem, Customer]),
-               OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER", "CUSTKEY", "C_NAME"]),
+               OrderedSet(["O_ORDERSTATUS", "ORDERKEY",
+                          "L_LINENUMBER", "CUSTKEY", "C_NAME"]),
                OrderedSet([Q1Relation, Q2Relation]))
     Q3.dependant_on.update({Q1, Q2})
     res = QuerySet({Q1, Q2, Q3})
@@ -478,6 +517,7 @@ def example_11():
     if len(res_list) == 0:
         print("No result")
 
+
 def example_10():
 
     Q1 = Query("Q1", OrderedSet([Orders, LineItem]),
@@ -486,15 +526,16 @@ def example_10():
         ["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER", "PARTKEY", "SUPPKEY", "CUSTKEY"]), None, Q1)
 
     Q2 = Query("Q2", OrderedSet([Orders, LineItem, Customer]),
-               OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER", "PARTKEY", "SUPPKEY", "CUSTKEY", "C_NAME"]),
+               OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER",
+                          "PARTKEY", "SUPPKEY", "CUSTKEY", "C_NAME"]),
                OrderedSet([Q1Relation, Customer]))
     Q2.dependant_on.update({Q1})
 
     Q3 = Query("Q3", OrderedSet([Orders, LineItem, PartSupp]),
-               OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER", "PARTKEY", "SUPPKEY", "PS_AVAILQTY"]),
-                OrderedSet([Q1Relation, PartSupp]))
+               OrderedSet(["O_ORDERSTATUS", "ORDERKEY", "L_LINENUMBER",
+                          "PARTKEY", "SUPPKEY", "PS_AVAILQTY"]),
+               OrderedSet([Q1Relation, PartSupp]))
     Q3.dependant_on.update({Q1})
-
 
     res = QuerySet({Q1, Q2, Q3})
     res_list = [res]
@@ -525,10 +566,9 @@ if __name__ == "__main__":
     # example_3()
     # example_4()
     # example_5()
-    # example_6()
     # example_7()
-    # example_8()
-    # tpch_haozhe()
-    example_9()
-    # example_big_2()
-    example_10()
+    # example_9()
+    # example_10()
+
+    # example_big_1() # tpch_7_0
+    example_big_2() # tpch_8_0
