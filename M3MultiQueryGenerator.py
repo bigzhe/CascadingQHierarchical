@@ -10,11 +10,12 @@ from M3Generator import M3Generator, M3Relation
 if TYPE_CHECKING:
     from Query import Query, QuerySet
 
+
 class M3MultiQueryGenerator:
     def __init__(self, dataset: str,
                  query_example: str,
-                 dataset_version:str,
-                 ring:str,
+                 dataset_version: str,
+                 ring: str,
                  query_set: "QuerySet",
                  var_types: "dict[str,str]",
                  filetype: str = "tbl",
@@ -23,9 +24,12 @@ class M3MultiQueryGenerator:
         self.query_example: str = query_example
         self.dataset: str = dataset
         self.dataset_version: str = dataset_version
-        self.join_order_nodes: "dict[Query, JoinOrderNode]" = {query: JoinOrderNode.generate(query.variable_order, query) for query in query_set.queries}
-        self.m3_generators = [M3Generator(dataset, ring, query, filetype) for query in self.join_order_nodes.keys()]
-        self.base_dir = "/Users/haozhe/GDrive/projects/cavier/FIVM/examples/cavier" if platform.system() == "Darwin" else "/home/user/jschwabe/FIVM/examples/cavier"
+        self.join_order_nodes: "dict[Query, JoinOrderNode]" = {query: JoinOrderNode.generate(
+            query.variable_order, query) for query in query_set.queries}
+        self.m3_generators = [M3Generator(
+            dataset, ring, query, filetype) for query in self.join_order_nodes.keys()]
+        self.base_dir = "/Users/haozhe/GDrive/projects/cavier/FIVM/examples/cavier" if platform.system(
+        ) == "Darwin" else "/local/scratch/zhang/cavier/FIVM/examples/cavier"
         self.filetype = filetype
         self.propagation_size = propagation_size
         self.query_version = query_version
@@ -52,33 +56,40 @@ class M3MultiQueryGenerator:
         res = ""
         for generator in self.m3_generators:
             res += f"-- {generator.query.name}\n"
-            res += generator.generate_maps(self.join_order_nodes[generator.query])
+            res += generator.generate_maps(
+                self.join_order_nodes[generator.query])
         return res
+
     def generate_tmp_maps(self):
         res = ""
         for generator in self.m3_generators:
             res += f"-- {generator.query.name}\n"
-            res += generator.generate_tmp_maps(self.join_order_nodes[generator.query])
+            res += generator.generate_tmp_maps(
+                self.join_order_nodes[generator.query])
         return res
 
     # Assemble queries from the queryset
-    def generate_queries(self)->"str, dict[Query, list[str]]":
+    def generate_queries(self) -> "str, dict[Query, list[str]]":
         res = ""
         query_names = {}
         for generator in self.m3_generators:
             res += f"-- {generator.query.name}\n"
-            generator_res, generator_query_names = generator.generate_queries(self.join_order_nodes[generator.query])
+            generator_res, generator_query_names = generator.generate_queries(
+                self.join_order_nodes[generator.query])
             res += generator_res
             query_names[generator.query] = generator_query_names
         return res, query_names
+
     def generate_triggers(self, batch: bool):
         res = ""
         reses = {}
         for generator in self.m3_generators:
             if batch:
-                generator.generate_triggers_batch(self.join_order_nodes[generator.query], reses)
+                generator.generate_triggers_batch(
+                    self.join_order_nodes[generator.query], reses)
             else:
-                generator.generate_triggers(self.join_order_nodes[generator.query], reses)
+                generator.generate_triggers(
+                    self.join_order_nodes[generator.query], reses)
 
         for relation, update in reses.items():
             if batch:
@@ -91,8 +102,10 @@ class M3MultiQueryGenerator:
     def generate_config(self, query_names: "dict[Query, OrderedSet[str]]"):
         query_list = topological_sort(set(query_names.keys()))
 
-        all_relations = {relation.name for query in query_list for relation in query.relations}
-        enumerated_queries = {f"{relation.name}:{','.join(relation.free_variables)}" for query in query_list for relation in query.atoms if relation.name not in all_relations}
+        all_relations = {
+            relation.name for query in query_list for relation in query.relations}
+        enumerated_queries = {
+            f"{relation.name}:{','.join(relation.free_variables)}" for query in query_list for relation in query.atoms if relation.name not in all_relations}
         res = f"{self.dataset}_{self.query_example}\n"
         res += f"{self.dataset}{self.dataset_version}\n"
         res += f"{self.filetype}\n"
@@ -107,9 +120,11 @@ class M3MultiQueryGenerator:
         for query in query_list:
             for query_name in query_names[query]:
                 res += f"{query_name}\n"
-        os.path.isdir(f"{self.base_dir}/config/{self.dataset}_{self.query_example}") or os.makedirs(f"{self.base_dir}/config/{self.dataset}_{self.query_example}")
+        os.path.isdir(f"{self.base_dir}/config/{self.dataset}_{self.query_example}") or os.makedirs(
+            f"{self.base_dir}/config/{self.dataset}_{self.query_example}")
         with open(f"{self.base_dir}/config/{self.dataset}_{self.query_example}/{self.dataset}_{self.query_example}{f'*{self.dataset_version}' if self.dataset_version else '' }{self.query_version}.txt", "w") as f:
             f.write(res)
+
     def generate(self, batch: bool):
         self.assign_index()
         res = '''---------------- TYPE DEFINITIONS ---------------
@@ -133,10 +148,12 @@ WITH PARAMETER SCHEMA (dynamic_min);
 ON SYSTEM READY {
 
 }'''
-        os.path.isdir(f"{self.base_dir}/m3/{self.dataset}_{self.query_example}") or os.makedirs(f"{self.base_dir}/m3/{self.dataset}_{self.query_example}")
+        os.path.isdir(f"{self.base_dir}/m3/{self.dataset}_{self.query_example}") or os.makedirs(
+            f"{self.base_dir}/m3/{self.dataset}_{self.query_example}")
         with open(f"{self.base_dir}/m3/{self.dataset}_{self.query_example}/{self.dataset}_{self.query_example}{f'*{self.dataset_version}' if self.dataset_version else '' }{self.query_version}.m3", "w") as f:
             f.write(res)
         self.generate_config(query_names)
+
 
 def topological_sort(queries: "set[Query]") -> "list[Query]":
     # Calculate in-degrees of each node

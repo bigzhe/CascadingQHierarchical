@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# queries=("Q1" "Q2" "Q3" "Q4" "Q5" "Q6", "Q7")
-
 queries=("Q1" "Q2" "Q3" "Q4" "Q5" "Q6" "Q7")
 
-file_prefix="tpch_7_0*10"
-file_path="/local/scratch/zhang/cavier/FIVM/examples/queries/tpch_7_0/"
+# queries=("Q6")
+
+file_prefix="tpch_8_0*10"
+file_path="/local/scratch/zhang/cavier/FIVM/examples/queries/tpch_8_0/"
 
 redirect="$1"  # Get the value of the first input parameter
 
@@ -28,6 +28,6 @@ done
 
 if [[ "$redirect" == "true" ]]; then
     cd /local/scratch/zhang/cavier/FIVM/examples
-    make DATASET=tpch_7_0
+    make DATASET=tpch_8_0
 fi
 

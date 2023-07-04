@@ -768,19 +768,19 @@ def main(args):
 
     root, relations, free_vars = None, None, None
 
-    if q == "Q1" and query_group == "tpch_7_1*1":
+    if q == "Q1" and query_group == "tpch_7_0*1":
         root, relations, free_vars = generate_TPCH_7_Q1()
-    elif q == "Q2" and query_group == "tpch_7_1*1":
+    elif q == "Q2" and query_group == "tpch_7_0*1":
         root, relations, free_vars = generate_TPCH_7_Q2()
-    elif q == "Q3" and query_group == "tpch_7_1*1":
+    elif q == "Q3" and query_group == "tpch_7_0*1":
         root, relations, free_vars = generate_TPCH_7_Q3()
-    elif q == "Q4" and query_group == "tpch_7_1*1":
+    elif q == "Q4" and query_group == "tpch_7_0*1":
         root, relations, free_vars = generate_TPCH_7_Q4()
-    elif q == "Q5" and query_group == "tpch_7_1*1":
+    elif q == "Q5" and query_group == "tpch_7_0*1":
         root, relations, free_vars = generate_TPCH_7_Q5()
-    elif q == "Q6" and query_group == "tpch_7_1*1":
+    elif q == "Q6" and query_group == "tpch_7_0*1":
         root, relations, free_vars = generate_TPCH_7_Q6()
-    elif q == "Q7" and query_group == "tpch_7_1*1":
+    elif q == "Q7" and query_group == "tpch_7_0*1":
         root, relations, free_vars = generate_TPCH_7_Q7()
     elif q == "Q1" and query_group == "tpch_8_0*1":
         root, relations, free_vars = generate_TPCH_8_Q1()
@@ -795,6 +795,34 @@ def main(args):
     elif q == "Q6" and query_group == "tpch_8_0*1":
         root, relations, free_vars = generate_TPCH_8_Q6()
     elif q == "Q7" and query_group == "tpch_8_0*1":
+        root, relations, free_vars = generate_TPCH_8_Q7()
+    elif q == "Q1" and query_group == "tpch_7_0*10":
+        root, relations, free_vars = generate_TPCH_7_Q1()
+    elif q == "Q2" and query_group == "tpch_7_0*10":
+        root, relations, free_vars = generate_TPCH_7_Q2()
+    elif q == "Q3" and query_group == "tpch_7_0*10":
+        root, relations, free_vars = generate_TPCH_7_Q3()
+    elif q == "Q4" and query_group == "tpch_7_0*10":
+        root, relations, free_vars = generate_TPCH_7_Q4()
+    elif q == "Q5" and query_group == "tpch_7_0*10":
+        root, relations, free_vars = generate_TPCH_7_Q5()
+    elif q == "Q6" and query_group == "tpch_7_0*10":
+        root, relations, free_vars = generate_TPCH_7_Q6()
+    elif q == "Q7" and query_group == "tpch_7_0*10":
+        root, relations, free_vars = generate_TPCH_7_Q7()
+    elif q == "Q1" and query_group == "tpch_8_0*10":
+        root, relations, free_vars = generate_TPCH_8_Q1()
+    elif q == "Q2" and query_group == "tpch_8_0*10":
+        root, relations, free_vars = generate_TPCH_8_Q2()
+    elif q == "Q3" and query_group == "tpch_8_0*10":
+        root, relations, free_vars = generate_TPCH_8_Q3()
+    elif q == "Q4" and query_group == "tpch_8_0*10":
+        root, relations, free_vars = generate_TPCH_8_Q4()
+    elif q == "Q5" and query_group == "tpch_8_0*10":
+        root, relations, free_vars = generate_TPCH_8_Q5()
+    elif q == "Q6" and query_group == "tpch_8_0*10":
+        root, relations, free_vars = generate_TPCH_8_Q6()
+    elif q == "Q7" and query_group == "tpch_8_0*10":
         root, relations, free_vars = generate_TPCH_8_Q7()
 
     res = generate_txt(relations, root, free_vars) if not is_sql else generate_sql_text(

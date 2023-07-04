@@ -570,5 +570,5 @@ if __name__ == "__main__":
     # example_9()
     # example_10()
 
-    # example_big_1() # tpch_7_0
+    example_big_1() # tpch_7_0
     example_big_2() # tpch_8_0
